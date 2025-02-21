@@ -165,7 +165,7 @@ async function main() {
   //     data: {
   //       score: 90, 
   //       studentId: `student${i}`, 
-  //       ...(i <= 5 ? { examId: i } : { assignmentId: i - 5 }), 
+  //       ...(i <= 5 ? { examId: i+1 } : { assignmentId: i - 5 }), 
   //     },
   //   });
   // }
@@ -183,17 +183,17 @@ async function main() {
   // }
 
   // EVENT
-  for (let i = 1; i <= 5; i++) {
-    await prisma.event.create({
-      data: {
-        title: `Event ${i}`, 
-        description: `Description for Event ${i}`, 
-        startTime: new Date(new Date().setHours(new Date().getHours() + 1)), 
-        endTime: new Date(new Date().setHours(new Date().getHours() + 2)), 
-        classId: (i % 5) + 1, 
-      },
-    });
-  }
+  // for (let i = 1; i <= 5; i++) {
+  //   await prisma.event.create({
+  //     data: {
+  //       title: `Event ${i}`, 
+  //       description: `Description for Event ${i}`, 
+  //       startTime: new Date(new Date().setHours(new Date().getHours() + 1)), 
+  //       endTime: new Date(new Date().setHours(new Date().getHours() + 2)), 
+  //       classId: (i % 5) + 1, 
+  //     },
+  //   });
+  // }
 
   // ANNOUNCEMENT
   // for (let i = 1; i <= 5; i++) {
