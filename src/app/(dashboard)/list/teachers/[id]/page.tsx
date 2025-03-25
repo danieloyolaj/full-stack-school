@@ -110,10 +110,11 @@ const SingleTeacherPage = () => {
         <div className="bg-white p-4 rounded-md">
           <h1 className="text-xl font-semibold">Shorcuts</h1>
           <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
-            <Link href="/" className="p-3 rounded-md bg-lamaSky">Teacher&apos;s Classes</Link>
-            <Link href="/" className="p-3 rounded-md bg-lamaPurpleLight">Teacher&apos;s Students</Link>
-            <Link href="/" className="p-3 rounded-md bg-lamaYellowLight">Teacher&apos;s Lessons</Link>
-            <Link href="/" className="p-3 rounded-md bg-lamaSkyLight">Teacher&apos;s Exams</Link>
+            <Link href={`/list/classes?supervisorId=${"teacher2"}`} className="p-3 rounded-md bg-lamaSky">Teacher&apos;s Classes</Link>
+            <Link href={`/list/students?teacherId=${"teacher2"}`} className="p-3 rounded-md bg-lamaPurpleLight">Teacher&apos;s Students</Link>
+            <Link href={`/list/lessons?teacherId=${"teacher2"}`} className="p-3 rounded-md bg-lamaYellowLight">Teacher&apos;s Lessons</Link>
+            <Link href={`/list/exams?teacherId=${"teacher2"}`} className="p-3 rounded-md bg-lamaSkyLight">Teacher&apos;s Exams</Link>
+            <Link href={`/list/assignments?teacherId=${"teacher2"}`} className="p-3 rounded-md bg-lamaSkyLight">Teacher&apos;s Assignments</Link>
           </div>
         </div>
         <Performance />
