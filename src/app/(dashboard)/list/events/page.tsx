@@ -2,9 +2,9 @@ import FormModal from "@/components/FormModal"
 import Pagination from "@/components/Pagination"
 import Table from "@/components/Table"
 import TableSearch from "@/components/TableSearch"
-import {eventsData, role, } from "@/lib/data"
 import prisma from "@/lib/prisma"
 import { ITEM_PER_PAGE } from "@/lib/settings"
+import { currentUserId, role } from "@/lib/utils"
 import { Class, Prisma, Event } from "@prisma/client"
 import Image from "next/image"
 import Link from "next/link"
@@ -37,17 +37,21 @@ const columns = [
     accessor: "endTime" ,
     className: "hidden md:table-cell",
   },
-  {
-    header: "Actions",
-    accessor: "action",
-  },
+  ...(role === "admin"
+    ? [
+      {
+        header: "Actions",
+        accessor: "action",
+      },
+    ]
+    : []),
 ]
 
 //Showing all the rows
 const renderRow = (item:EventList) => (
   <tr key={item.id} className="border-b border-gray-200 ever:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
     <td className="flex items-center gap-4 p-4">{item.title}</td>
-    <td className="">{item.class.name}</td>
+    <td className="">{item.class?.name || "-"}</td>
     <td className="hidden md:table-cell">{new Intl.DateTimeFormat("en-US").format(item.startTime)}</td>
     <td className="hidden md:table-cell">{item.startTime.toLocaleTimeString("en-US", {
       hour: "2-digit",
@@ -114,6 +118,20 @@ const EventsListPage = async ({
       }
     }
   }
+
+//ROLE CONDITIONS
+const roleConditions = {
+  teacher: { lessons: { some: { teacherId: currentUserId!}}},
+  student: { students: { some: { id: currentUserId!}}},
+  parent: { students: { some: { parentId: currentUserId!}}},
+}
+
+// query.OR = [
+//   { classId: ' ' },
+//   {
+//     class: roleConditions [role as keyof typeof roleConditions] || {},
+//   }
+// ]
 
   //Here we only select the columns of the tables needed
   const [data, count] = await prisma.$transaction([

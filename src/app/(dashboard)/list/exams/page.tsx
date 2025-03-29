@@ -2,9 +2,9 @@ import FormModal from "@/components/FormModal"
 import Pagination from "@/components/Pagination"
 import Table from "@/components/Table"
 import TableSearch from "@/components/TableSearch"
-import {examsData, lessonsData, role, subjectsData, } from "@/lib/data"
 import prisma from "@/lib/prisma"
 import { ITEM_PER_PAGE } from "@/lib/settings"
+import { currentUserId, role } from "@/lib/utils"
 import { Exam, Prisma, Subject, Class, Teacher } from "@prisma/client"
 import Image from "next/image"
 import Link from "next/link"
@@ -35,10 +35,14 @@ const columns = [
     accessor: "date" ,
     className: "hidden md:table-cell",
   },
-  {
-    header: "Actions",
-    accessor: "action",
-  },
+  ...(role === "admin" || role === "teacher"
+    ? [
+      {
+        header: "Actions",
+        accessor: "action",
+      },
+    ]
+    : []),
 ]
 
 //Showing all the rows
@@ -50,25 +54,13 @@ const renderRow = (item:ExamList) => (
     <td className="hidden md:table-cell">{new Intl.DateTimeFormat("en-US").format(item.startTime)}</td>
     <td>
       <div className="flex items-center gap-2">
-        {/* <Link href={`/list/teachers/${item.id}`}>
-          <button className="w-7 h-7 flex items-center justify-center rounded-full bg-lamaSky">
-            <Image src="/edit.png" alt="view-info" width={16} height={16} />
-          </button>
-        </Link> */}
         {/* This button below only shows if you are an admin */}
-        {role === 'admin' && (
+        {(role === 'admin' || role === "teacher") && (
           <>
           <FormModal table="exam" type="update" id={item.id}/>
-          <>
           <FormModal table="exam" type="delete" id={item.id}/>
-        </>
           </>
-          // <button className="w-7 h-7 flex items-center justify-center rounded-full bg-lamaPurple">
-          //   <Image src="/delete.png" alt="view-info" width={16} height={16} />
-          // </button>
-        )
-
-        }
+        )}
       </div>
     </td>
   </tr>
@@ -89,31 +81,58 @@ const ExamsListPage = async ({
   //Here we're searching in the db and showing data
   const query: Prisma.ExamWhereInput = {};
 
+  query.lesson = {};
+
   //This prevents a user to put any query
   if (queryParams) {
     for (const [key, value] of Object.entries(queryParams)) {
       if (value !== undefined) {
         switch (key) {
           case "classId":
-            query.lesson = {classId: parseInt(value)};
+            query.lesson.classId = parseInt(value)
             break;
           case "teacherId":
-            query.lesson = {
-              teacherId: value,
-            };
+            query.lesson.teacherId = value;
             break;
           case "search":
-            query.lesson = {
-              subject: {
+            query.lesson.subject = {
                 name: {contains: value, mode: 'insensitive'},
               }
-            }
             break;
           default:
             break;
         }
       }
     }
+  }
+
+  //ROLE CONDITIONS
+  switch (role) {
+    case "admin":
+      break;
+    case "teacher":
+      query.lesson.teacherId = currentUserId!;
+      break;
+    case "student":
+      query.lesson.class = {
+        student: {
+          some: {
+            id: currentUserId!
+          }
+        }
+      }
+      break;
+    case "parent":
+      query.lesson.class = {
+        student: {
+          some: {
+            parentId: currentUserId!
+          }
+        }
+      }
+      break;
+    default:
+      break;
   }
 
   //Here we only select the columns of the tables needed

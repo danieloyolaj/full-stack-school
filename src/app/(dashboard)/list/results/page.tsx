@@ -2,9 +2,9 @@ import FormModal from "@/components/FormModal"
 import Pagination from "@/components/Pagination"
 import Table from "@/components/Table"
 import TableSearch from "@/components/TableSearch"
-import {assignmentsData, resultsData, role, } from "@/lib/data"
 import prisma from "@/lib/prisma"
 import { ITEM_PER_PAGE } from "@/lib/settings"
+import { currentUserId, role } from "@/lib/utils"
 import { Prisma } from "@prisma/client"
 import Image from "next/image"
 import Link from "next/link"
@@ -50,10 +50,13 @@ const columns = [
     accessor: "date" ,
     className: "hidden md:table-cell",
   },
-  {
-    header: "Actions",
-    accessor: "action",
-  },
+  ...(role === "admin" || role === "teacher"
+        ? [
+          {
+            header: "Actions",
+            accessor: "action",
+          },
+        ] : []),
 ]
 
 //Showing all the rows
@@ -67,13 +70,12 @@ const renderRow = (item:ResultList) => (
     <td className="hidden md:table-cell">{new Intl.DateTimeFormat("en-US").format(item.startDate)}</td>
     <td>
       <div className="flex items-center gap-2">
-        {role === 'admin' && (
+        {(role === 'admin' || role === 'teacher') && (
       <>
           <FormModal table="result" type="update" data={item}/>
           <FormModal table="result" type="delete" id={item.id}/>
         </>
-      )
-      }
+      )}
         {/* <Link href={`/list/teachers/${item.id}`}>
           <button className="w-7 h-7 flex items-center justify-center rounded-full bg-lamaSky">
             <Image src="/edit.png" alt="view-info" width={16} height={16} />
@@ -123,6 +125,28 @@ const ResultsListPage = async ({
         }
       }
     }
+  }
+
+  //ROLE CONDITIONS
+  switch (role) {
+    case "admin":
+      break;
+    case "teacher":
+      query.OR = [
+        {exam: {lesson: {teacherId: currentUserId!}}},
+        {assignment: {lesson: {teacherId: currentUserId!}}},
+      ];
+      break;
+    case "student":
+      query.studentId = currentUserId!
+      break;
+    case "parent":
+      query.student = {
+        parentId: currentUserId!
+      }
+      break;
+    default:
+      break;
   }
 
   //Here we only select the columns of the tables needed
@@ -192,10 +216,11 @@ const ResultsListPage = async ({
               <Image src="/sort.png" alt="button" width={14} height={14}/>
             </button>
 
-            {role === 'admin' && (
-              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-              <Image src="/plus.png" alt="button" width={14} height={14}/>
-            </button>
+            {(role === 'admin' || role === 'teacher') && (
+              <FormModal table="result" type="create" />
+              // <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
+              //   <Image src="/plus.png" alt="button" width={14} height={14}/>
+              // </button>
             )}
           </div>
         </div>

@@ -2,11 +2,12 @@ import FormModal from "@/components/FormModal"
 import Pagination from "@/components/Pagination"
 import Table from "@/components/Table"
 import TableSearch from "@/components/TableSearch"
-import {assignmentsData, role, } from "@/lib/data"
 import prisma from "@/lib/prisma"
 import { ITEM_PER_PAGE } from "@/lib/settings"
+import { auth } from "@clerk/nextjs/server"
 import { Prisma, Subject, Class, Teacher, Assignment } from "@prisma/client"
 import Image from "next/image"
+import { currentUserId, role } from "@/lib/utils"
 import Link from "next/link"
 
 type AssignmentList = Assignment & {
@@ -37,10 +38,14 @@ const columns = [
     accessor: "dueDate" ,
     className: "hidden md:table-cell",
   },
-  {
-    header: "Actions",
-    accessor: "action",
-  },
+  ...(role === "admin" || role === "teacher"
+  ? [
+      {
+        header: "Actions",
+        accessor: "action",
+      },
+    ] 
+  : []),
 ]
 
 //Showing all the rows
@@ -54,7 +59,7 @@ const renderRow = (item:AssignmentList) => (
       <div className="flex items-center gap-2">
         
         {/* This button below only shows if you are an admin */}
-        {role === 'admin' && (
+        {role === 'admin' || role === "teacher" && (
           <>
             <FormModal table="assignment" type="update" data={item}/>
             <FormModal table="assignment" type="delete" id={item.id}/>
@@ -83,6 +88,7 @@ const AssignmentsListPage = async ({
 
   //Here we're searching in the db and showing data
   const query: Prisma.AssignmentWhereInput = {};
+  query.lesson = {};
 
   //This prevents a user to put any query
   if (queryParams) {
@@ -90,19 +96,15 @@ const AssignmentsListPage = async ({
       if (value !== undefined) {
         switch (key) {
           case "classId":
-            query.lesson = {classId: parseInt(value)};
+            query.lesson.classId = parseInt(value);
             break;
           case "teacherId":
-            query.lesson = {
-              teacherId: value,
-            };
+            query.lesson.teacherId = value;
             break;
           case "search":
-            query.lesson = {
-              subject: {
+            query.lesson.subject = {
                 name: {contains: value, mode: 'insensitive'},
               }
-            }
             break;
           default:
             break;
@@ -110,6 +112,35 @@ const AssignmentsListPage = async ({
       }
     }
   }
+
+  //ROLE CONDITIONS
+  switch (role) {
+    case "admin":
+      break;
+    case "teacher":
+      query.lesson.teacherId = currentUserId!;
+      break;
+    case "student":
+      query.lesson.class = {
+        student: {
+          some: {
+            id: currentUserId!,
+          }
+        }
+      };
+      break;
+    case "parent":
+        query.lesson.class = {
+          student: {
+            some: {
+              parentId: currentUserId!,
+            }
+          }
+        };
+        break;  
+    default:
+      break;
+  } 
 
   //Here we only select the columns of the tables needed
   const [data, count] = await prisma.$transaction([
